@@ -36,3 +36,12 @@ for alph in alphas:
     if ts_rsqrd > initrsq:
         print("lambda: ", alph, "R-sq ", round(tr_rsqrd, 5), "r-sq ", round(ts_rsqrd, 5))
         initrsq = ts_rsqrd
+
+ridge_reg = Ridge(alpha=0.01)
+ridge_reg.fit(x_train, y_train)
+lasso_reg = Lasso(alpha=0.001)
+lasso_reg.fit(x_train, y_train)
+for i in range(11):
+    print(columns[i], "ridge:", ridge_reg.coef_[i])
+    print(columns[i], "lasso:", lasso_reg.coef_[i])
+       
