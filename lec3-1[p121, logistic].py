@@ -34,4 +34,5 @@ def IV_calc(data, var):
         return dataf
     else:
         data['bin_var'] = pd.qcut(data[var].rank(method='first'), 10)
+        dataf = data.groupby(['bin_var'])
         
