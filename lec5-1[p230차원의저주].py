@@ -22,11 +22,19 @@ def distance(v, w):
     sum_of_sq = sum(v_i * v_i for v_i in vec_sub) # 거리 제곱
     return math.sqrt(sum_of_sq) # 거리 제곱근 리턴
 
+def minkowski(v, w, p=2):
+    '''
+    minkowski, p
+    '''
+    vec_sub = [np.abs(v_i - w_i) ** p for v_i, w_i in zip(v,w)]
+    sum_of_sq = sum(v_i for v_i in vec_sub) ** (1/p)
+    return sum_of_sq
+    
 def random_dist_comparison(dimension, number_pairs):
     '''
     random 정규 분포 2개의 vector 거리 계산
     '''
-    return [distance(random_point_gen(dimension), random_point_gen(dimension)) for _ in range(number_pairs)]
+    return [minkowski(random_point_gen(dimension), random_point_gen(dimension), p=1) for _ in range(number_pairs)]
 
 def mean(x):
     return sum(x) / len(x)
@@ -54,12 +62,12 @@ for dims in dimensions:
 
 
 # graph
-#plt.figure()
-#plt.xlabel("dim")
-#plt.ylabel("dist")
-#plt.plot(dist_vals["Dimension"], dist_vals["Avg_Distance"], "r-")
-#plt.legend(loc='best')
-#plt.show()
+plt.figure()
+plt.xlabel("dim")
+plt.ylabel("dist")
+plt.plot(dist_vals["Dimension"], dist_vals["Avg_Distance"], "r-")
+plt.legend(loc='best')
+plt.show()
 
 ## 2차원 ,3차원 ##
 two = np.random.rand(60, 2)

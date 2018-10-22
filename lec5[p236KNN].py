@@ -14,7 +14,7 @@ for col in range(len(colList)):
     colList[col] = colList[col].replace(" ", "_")
 b_cancer.columns = colList
 
-# 결측치 대체 # --> ?를 nan으로, nan을 최빈값으로
+# 결측치 대체 # --> ?를 nan으로, nan을 최빈값으로 #
 b_cancer['Bare_Nuclei'] = b_cancer['Bare_Nuclei'].replace('?', np.NAN)
 b_cancer['Bare_Nuclei'] = b_cancer['Bare_Nuclei'].fillna(b_cancer['Bare_Nuclei'].value_counts().index[0])
 b_cancer['Cancer_Ind'] = 0
@@ -40,11 +40,10 @@ print("\naccruacy: ", round(accuracy_score(y_test, knn_fit.predict(x_test)), 3))
 print("\nreport: \n", classification_report(y_test, knn_fit.predict(x_test)))
 
 ## KNN K tuning ##
-dummyarray = np.empty((5,3))
+k_vals = [i for i in range(1, 51, 2)]
+dummyarray = np.empty((len(k_vals),3))
 k_valchart = pd.DataFrame(dummyarray)
 k_valchart.columns = ["K_value", "Train_acc", "Test_acc"]
-
-k_vals = [1,2,3,4,5]
 
 for i in range(len(k_vals)):
     knn_fit = KNeighborsClassifier(n_neighbors=k_vals[i], p=2, metric='minkowski')
@@ -62,13 +61,12 @@ for i in range(len(k_vals)):
     k_valchart.loc[i, 'Train_acc'] = round(accuracy_score(y_train, knn_fit.predict(x_train)), 3)
     k_valchart.loc[i, 'Test_acc'] = round(accuracy_score(y_test, knn_fit.predict(x_test)), 3)
     
-# graph
+# graph ##
 plt.figure()
 plt.plot(k_valchart["K_value"], k_valchart["Train_acc"], "r-")
 plt.plot(k_valchart["K_value"], k_valchart["Test_acc"], "b-")
 
-plt.axis([0.9, 5, 0.92, 1.005])
-plt.xticks([1,2,3,4,5])
+plt.axis([0.8, 5, 0.82, 1.005])
 
 for a, b in zip(k_valchart["K_value"], k_valchart["Train_acc"]):
     plt.text(a,b,str(b), fontsize=10)
@@ -76,8 +74,6 @@ for a, b in zip(k_valchart["K_value"], k_valchart["Test_acc"]):
     plt.text(a,b,str(b), fontsize=10)
 plt.legend(loc='upper right')
 plt.show()
-
-
 
 
 
