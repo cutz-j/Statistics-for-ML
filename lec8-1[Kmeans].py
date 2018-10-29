@@ -34,3 +34,24 @@ D_k = [cdist(x_iris, center, 'euclidean') for center in centroids] # 각 중앙�
 cIdx = [np.argmin(D, axis=1) for D in D_k] # 관측값마다의 최소값을 인덱스로 --> axis = 1(행마다)(데이터)
 dist = [np.min(D, axis=1) for D in D_k]
 avgWithinSS = [sum(d) / x_iris.shape[0] for d in dist]
+
+# SS
+wcss = [sum(d**2) for d in dist]
+tss = sum(pdist(x_iris)**2) / x_iris.shape[0]
+bss = tss - wcss
+
+# 엘보 곡선 #
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(K, avgWithinSS, 'b*-')
+plt.grid(True)
+plt.xlabel('K num')
+plt.ylabel('Avg')
+plt.show()
+
+
+
+
+
+
+
