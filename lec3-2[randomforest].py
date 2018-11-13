@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 
 colList = ['Status of existing checking account ', 'Duration in month', 'Credit history',
@@ -66,6 +67,10 @@ min n in min tree node: 2
 rf_fit = RandomForestClassifier(n_estimators=1000, criterion="gini", max_depth=100, 
                                 min_samples_split=3, min_samples_leaf=2)
 rf_fit.fit(x_train, y_train)
+
+print("\nRandom Forest - test Confusion Matrix\n\n",
+      pd.crosstab(y_test, rf_fit.predict(x_test), rownames=["actual"], colnames=["Predicted"]))
+print("\nRandom Forest - test accuracy", round(accuracy_score(y_test, rf_fit.predict(x_test)), 3))
 
 
 
