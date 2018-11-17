@@ -5,6 +5,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.ensemble import BaggingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import AdaBoostClassifier
 
 ## 데이터 전처리 ##
 ## HR data load ##
@@ -98,4 +102,75 @@ y_hat_test = bag_fit.predict(x_test)
 print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
 print(accuracy_score(y_test, y_hat_test))
 print(classification_report(y_test, y_hat_test))    
-    
+print("====================random forest=====================")
+
+rf_fit = RandomForestClassifier(n_estimators=5000, criterion='gini', max_depth=5,
+                                min_samples_split=2, bootstrap=True, max_features='auto',
+                                random_state=77, min_samples_leaf=1, class_weight={0:0.3, 1:0.7})
+rf_fit.fit(x_train, y_train)
+y_hat = rf_fit.predict(x_train)
+y_hat_test = rf_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))    
+print("=========================graph=============================")
+
+## 지니의 평균값 감소를 이용한 변수 중요도 그래프 ##
+model_ranks = pd.Series(rf_fit.feature_importances_, index=x_train.columns, name='Importance').sort_values(ascending=False, inplace=False)
+model_ranks.index.name = 'Variables'
+top_features = model_ranks.iloc[:31].sort_values(ascending=True, inplace=False)
+#plt.figure(figsize=(20,10))
+#ax = top_features.plot(kind='barh')
+#ax.set_title("Variable Importance plot")
+#ax.set_xlabel("Mean decrease in Var")
+#ax.set_yticklabels(top_features.index, fontsize=13)
+
+''' # grid search는 pipeline # 3.9분 소요
+### grid search ###
+pipeline = Pipeline([('clf', RandomForestClassifier(criterion='gini', class_weight={0:0.3, 1:0.7}))])
+parameters = {'clf__n_estimators':(2000,3000,5000),
+              'clf__max_depth':(5,15,30),
+              'clf__min_samples_split':(2,3),
+              'clf__min_samples_leaf':(1,2)}
+grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, cv=5, verbose=1, scoring='accuracy')
+grid_search.fit(x_train, y_train)
+print('best score', grid_search.best_score_)
+best_parameters = grid_search.best_estimator_.get_params()
+for param_name in sorted(parameters.keys()):
+    print('\t%s: %r' % (param_name, best_parameters[param_name]))
+predictions = grid_search.predict(x_test)
+print()
+print(accuracy_score(y_test, predictions))
+print(classification_report(y_test, predictions))
+print(pd.crosstab(y_test, predictions, rownames=['actual'], colnames=['predict']))
+print("=====================================Boosting================================")
+'''
+print("=====================================AdaBoosting================================")
+dtree = DecisionTreeClassifier(criterion='gini', max_depth=1)
+adabst_fit = AdaBoostClassifier(base_estimator=dtree, n_estimators=5000, learning_rate=0.05,
+                                random_state=77)
+adabst_fit.fit(x_train, y_train)
+y_hat = adabst_fit.predict(x_train)
+y_hat_test = adabst_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))    
+print("=====================================GradientBoosting================================")
+
+
+
+
+
+
+
+
+
+
