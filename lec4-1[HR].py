@@ -149,7 +149,9 @@ print(classification_report(y_test, predictions))
 print(pd.crosstab(y_test, predictions, rownames=['actual'], colnames=['predict']))
 print("=====================================Boosting================================")
 '''
-print("=====================================AdaBoosting================================")
+print("===============================AdaBoosting================================")
+
+## adaBoost ##
 dtree = DecisionTreeClassifier(criterion='gini', max_depth=1)
 adabst_fit = AdaBoostClassifier(base_estimator=dtree, n_estimators=5000, learning_rate=0.05,
                                 random_state=77)
@@ -163,7 +165,9 @@ print()
 print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
 print(accuracy_score(y_test, y_hat_test))
 print(classification_report(y_test, y_hat_test))    
-print("=====================================GradientBoosting================================")
+print("=============================GradientBoosting===============================")
+
+## GradBoost ##
 
 
 
