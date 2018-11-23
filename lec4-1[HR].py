@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+import xgboost as xgb
 
 ## 데이터 전처리 ##
 ## HR data load ##
@@ -168,6 +170,55 @@ print(classification_report(y_test, y_hat_test))
 print("=============================GradientBoosting===============================")
 
 ## GradBoost ##
+gbc_fit = GradientBoostingClassifier(loss='deviance', learning_rate=0.05, n_estimator=5000,
+                                     min_samples_split=2, min_samples_leaf=1, max_depth=1,
+                                     random_state=77)
+gbc_fit.fit(x_train, y_train)
+y_hat = gbc_fit.predict(x_train)
+y_hat_test = gbc_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))    
+print("=============================XGBoosting===============================")
+
+xgb_fit = xgb.XGBClassifier(max_depth=2, n_estimators=5000, learning_rate=0.05)
+xgb_fit.fit(x_train, y_train)
+y_hat = xgb_fit.predict(x_train)
+y_hat_test = xgb_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))    
+print("=============================Ensemble===============================")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
