@@ -170,7 +170,7 @@ print(classification_report(y_test, y_hat_test))
 print("=============================GradientBoosting===============================")
 
 ## GradBoost ##
-gbc_fit = GradientBoostingClassifier(loss='deviance', learning_rate=0.05, n_estimator=5000,
+gbc_fit = GradientBoostingClassifier(loss='deviance', learning_rate=0.05, n_estimators=5000,
                                      min_samples_split=2, min_samples_leaf=1, max_depth=1,
                                      random_state=77)
 gbc_fit.fit(x_train, y_train)
