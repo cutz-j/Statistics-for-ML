@@ -197,35 +197,3 @@ print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict'])
 print(accuracy_score(y_test, y_hat_test))
 print(classification_report(y_test, y_hat_test))    
 print("=============================Ensemble===============================")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
