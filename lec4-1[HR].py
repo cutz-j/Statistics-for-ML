@@ -11,6 +11,11 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+#from sklearn import svm
+from sklearn.naive_bayes import MultinomialNB
+
 
 ## 데이터 전처리 ##
 ## HR data load ##
@@ -45,6 +50,13 @@ hr_data_new = pd.concat([dummy_bus, dummy_dpt, dummy_edufield, dummy_gender,
 x_train, x_test, y_train, y_test = train_test_split(hr_data_new.drop(['Attrition_ind'], axis=1),
                                                     hr_data['Attrition_ind'], train_size=0.7,
                                                     test_size=0.3, random_state=77)
+
+from sklearn.preprocessing import MinMaxScaler
+ss= MinMaxScaler()
+x_train = ss.fit_transform(x_train)
+x_test = ss.transform(x_test)
+x_train = pd.DataFrame(x_train, columns=hr_data_new.drop(['Attrition_ind'], axis=1).columns)
+x_test = pd.DataFrame(x_test, columns=hr_data_new.drop(['Attrition_ind'], axis=1).columns)
 
 
 ### decision Tree ###
@@ -197,3 +209,168 @@ print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict'])
 print(accuracy_score(y_test, y_hat_test))
 print(classification_report(y_test, y_hat_test))    
 print("=============================Ensemble===============================")
+### 서로 다른 분류기로 앙상블의 앙상블 ###
+## 분류기 1: Logistic Regression ##
+clwght = {0:0.3, 1:0.7} # 가중치
+
+clf1_log_fit = LogisticRegression(fit_intercept=True, class_weight=clwght)
+clf1_log_fit.fit(x_train, y_train)
+
+## 분류기 2: 결정 트리 ##
+clf2_dt_fit = DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=2,
+                                     min_samples_leaf=1, random_state=42, class_weight=clwght)
+clf2_dt_fit.fit(x_train, y_train)
+
+## 분류기 3: 랜덤 포레스트 ##
+clf3_rf_fit = RandomForestClassifier(n_estimators=10000, criterion='gini', max_depth=6,
+                                     min_samples_split=2, min_samples_leaf=1, class_weight=clwght)
+clf3_rf_fit.fit(x_train, y_train)
+
+## 분류기 4: Adaboost ##
+clf4_dtree = DecisionTreeClassifier(criterion='gini', max_depth=1, class_weight=clwght)
+clf4_ada_fit = AdaBoostClassifier(base_estimator=clf4_dtree, n_estimators=5000,
+                                  learning_rate=0.05, random_state=42)
+clf4_ada_fit.fit(x_train, y_train)
+
+## 앙상블 수행 ##
+ensemble = pd.DataFrame()
+
+ensemble["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_train))[1]
+ensemble["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_train))[1]
+ensemble["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_train))[1]
+ensemble["ada_output_one"] = pd.DataFrame(clf4_ada_fit.predict_proba(x_train))[1]
+ensemble = pd.concat([ensemble, pd.DataFrame(y_train).reset_index(drop=True)], axis=1)
+
+
+# 메타분류기 적합화 #
+meta_fit = LogisticRegression(fit_intercept=False)
+meta_fit.fit(ensemble[['log_output_one', 'dtr_output_one', 'rf_output_one', 'ada_output_one']],
+             ensemble['Attrition_ind'])
+
+coefs =  meta_fit.coef_
+print ("Co-efficients for LR, DT, RF & AB are:",coefs)
+
+ensemble_test = pd.DataFrame()
+
+ensemble_test["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_test))[1]
+ensemble_test["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_test))[1]
+ensemble_test["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_test))[1]
+ensemble_test["ada_output_one"] = pd.DataFrame(clf4_ada_fit.predict_proba(x_test))[1]
+ensemble_test = pd.concat([ensemble_test, pd.DataFrame(y_test).reset_index(drop=True)], axis=1)
+
+ensemble_test["all_one"] = meta_fit.predict(ensemble_test[['log_output_one','dtr_output_one','rf_output_one','ada_output_one']])
+
+print("\nEnsemble of Models -\n", pd.crosstab(ensemble_test['Attrition_ind'], ensemble_test['all_one'],
+                                              rownames=['Actual'], colnames=['Predicted']))
+print("\nEnsemble of Models - acc", round(accuracy_score(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']), 3))
+print("\nclassification report\n", classification_report(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']))
+print("=============================KNN===============================")
+
+## ada -> KNN 대체 ##
+knn_fit = KNeighborsClassifier(n_neighbors=5, p=2, metric='minkowski')
+knn_fit.fit(x_train, y_train)
+y_hat = knn_fit.predict(x_train)
+y_hat_test = knn_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))
+print("=============================re-ensemble===============================")
+
+ensemble = pd.DataFrame()
+ensemble["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_train))[1]
+ensemble["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_train))[1]
+ensemble["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_train))[1]
+ensemble["knn_output_one"] = pd.DataFrame(knn_fit.predict_proba(x_train))[1]
+ensemble = pd.concat([ensemble, pd.DataFrame(y_train).reset_index(drop=True)], axis=1)
+
+meta_fit = LogisticRegression(fit_intercept=False)
+meta_fit.fit(ensemble[['log_output_one', 'dtr_output_one', 'rf_output_one', 'knn_output_one']],
+             ensemble['Attrition_ind'])
+
+coefs =  meta_fit.coef_
+print ("Co-efficients for LR, DT, RF & KNN are:",coefs)
+ensemble_test = pd.DataFrame()
+
+ensemble_test["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_test))[1]
+ensemble_test["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_test))[1]
+ensemble_test["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_test))[1]
+ensemble_test["knn_output_one"] = pd.DataFrame(knn_fit.predict_proba(x_test))[1]
+ensemble_test = pd.concat([ensemble_test, pd.DataFrame(y_test).reset_index(drop=True)], axis=1)
+
+ensemble_test["all_one"] = meta_fit.predict(ensemble_test[['log_output_one','dtr_output_one','rf_output_one','knn_output_one']])
+
+print("\nEnsemble of Models -\n", pd.crosstab(ensemble_test['Attrition_ind'], ensemble_test['all_one'],
+                                              rownames=['Actual'], colnames=['Predicted']))
+print("\nEnsemble of Models - acc", round(accuracy_score(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']), 3))
+print("\nclassification report\n", classification_report(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']))
+print("=============================bootstrap===============================")
+## 동일 형식 분류기를 사용한 부트스트랩 앙상블 of 앙상블 ## --> 에이다 부스트
+dtree = DecisionTreeClassifier(criterion='gini', max_depth=1, class_weight=clwght)
+adabst_fit = AdaBoostClassifier(base_estimator=dtree, n_estimators=500, learning_rate=0.05,
+                                random_state=77)
+adabst_fit.fit(x_train, y_train)
+bag_fit = BaggingClassifier(base_estimator=adabst_fit, n_estimators=50, max_samples=1.0,
+                            max_features=1.0, bootstrap=True, bootstrap_features=False,
+                            n_jobs=-1, random_state=77)
+bag_fit.fit(x_train, y_train)
+y_hat = bag_fit.predict(x_train)
+y_hat_test = bag_fit.predict(x_test)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))
+
+print("=============================nb ensemble===============================")
+
+nb_fit = MultinomialNB()
+nb_fit.fit(x_train, y_train)
+y_hat = nb_fit.predict(x_train)
+y_hat_test = nb_fit.predict(x_test_scale)
+print(pd.crosstab(y_train, y_hat, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_train, y_hat))
+print(classification_report(y_train, y_hat))
+print()
+print(pd.crosstab(y_test, y_hat_test, rownames=['actual'], colnames=['predict']))
+print(accuracy_score(y_test, y_hat_test))
+print(classification_report(y_test, y_hat_test))
+
+ensemble = pd.DataFrame()
+ensemble["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_train))[1]
+ensemble["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_train))[1]
+ensemble["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_train))[1]
+ensemble["knn_output_one"] = pd.DataFrame(nb_fit.predict_proba(x_train))[1]
+ensemble = pd.concat([ensemble, pd.DataFrame(y_train).reset_index(drop=True)], axis=1)
+
+meta_fit = LogisticRegression(fit_intercept=False)
+meta_fit.fit(ensemble[['log_output_one', 'dtr_output_one', 'rf_output_one', 'knn_output_one']],
+             ensemble['Attrition_ind'])
+
+coefs =  meta_fit.coef_
+print ("Co-efficients for LR, DT, RF & NB are:",coefs)
+ensemble_test = pd.DataFrame()
+
+ensemble_test["log_output_one"] = pd.DataFrame(clf1_log_fit.predict_proba(x_test))[1]
+ensemble_test["dtr_output_one"] = pd.DataFrame(clf2_dt_fit.predict_proba(x_test))[1]
+ensemble_test["rf_output_one"] = pd.DataFrame(clf3_rf_fit.predict_proba(x_test))[1]
+ensemble_test["knn_output_one"] = pd.DataFrame(nb_fit.predict_proba(x_test_scale))[1]
+ensemble_test = pd.concat([ensemble_test, pd.DataFrame(y_test).reset_index(drop=True)], axis=1)
+
+ensemble_test["all_one"] = meta_fit.predict(ensemble_test[['log_output_one','dtr_output_one','rf_output_one','knn_output_one']])
+
+print("\nEnsemble of Models -\n", pd.crosstab(ensemble_test['Attrition_ind'], ensemble_test['all_one'],
+                                              rownames=['Actual'], colnames=['Predicted']))
+print("\nEnsemble of Models - acc", round(accuracy_score(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']), 3))
+print("\nclassification report\n", classification_report(ensemble_test['Attrition_ind'],
+                                                         ensemble_test['all_one']))
