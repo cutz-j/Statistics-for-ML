@@ -131,31 +131,3 @@ def print_recom(uid=315, n_movies=15, pred_mat=A_hat, wpred_mat=W_pred):
 
 predmtrx = print_recom(n_movies=10)
 print(predmtrx)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-            
-            
-        
